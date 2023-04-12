@@ -1,0 +1,50 @@
+Copy code
+import json
+
+with open("iam_data.json") as f:
+   data = json.load(f)
+
+# Filter the data based on the two conditions
+
+condition1 = [object for object in data if object["parent_id"] is None and all(object[key] for key in object.keys() if key != "parent_id")]
+
+condition2 = [object for object in data if all(object.values())]
+
+condition3 = [item for item in data if item["parent_id"] is None and item["resource_id"] is not None and all(item[key] for key in item.keys() if key != "parent_id")]
+ 
+condition4 = [item for item in data if item["parent_id"] is bigquery and item["resource_id"] is dataset and all(item[key] for key in item.keys() if key != "parent_id")]
+
+condition4 = [item for item in data if item["parent_id"] is GCS and item["resource_id"] is bucket_name and all(item[key] for key in item.keys() if key != "parent_id")]
+
+
+
+
+# Generate access control configurations based on the filtered data
+access_control_configs = []
+
+for object in condition1: 
+   access_control_configs.append(f"""
+resource "google_project_iam_binding" "{object['role_id']}_access" {{
+  project = "{object['project_id']}"
+  role = "{object['role_id']}"
+  members = ["user:{object['principal_id']}"]
+}}
+
+resource "google_organization_iam_binding" "{object['role_id']}_access" {{
+   org_id = "{object['application_id']}"
+   role = "{object['role_id']}"
+   members = ["user:{object['principal_id']}"]
+}}
+""")
+
+for object in condition2:
+   access_control_configs.append(f"""
+resource "google_storage_bucket_iam_binding" "{object['role_id']}_access" {{
+  bucket = "{object['resource_id']}"
+  role = "{object['role_id']}"
+  members = ["user:{object['principal_id']}"]
+}}
+""")
+# Write the access control configurations to a file in Terraform format
+with open("access_control.tf", "w") as f:
+    f.write("\n".join(access_control_configs))
